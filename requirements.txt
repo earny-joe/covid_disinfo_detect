@@ -9,7 +9,7 @@ cryptography==2.8
 cycler==0.10.0
 cymem==2.0.3
 emoji==0.5.4
-en-core-web-sm==2.2.5
+https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz
 entrypoints==0.3
 flake8==3.7.9
 idna==2.9
