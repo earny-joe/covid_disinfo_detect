@@ -9,7 +9,6 @@ cryptography==2.8
 cycler==0.10.0
 cymem==2.0.3
 emoji==0.5.4
-en-core-web-md==2.2.5
 en-core-web-sm==2.2.5
 entrypoints==0.3
 flake8==3.7.9
