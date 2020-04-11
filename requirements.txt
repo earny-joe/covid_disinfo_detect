@@ -1,3 +1,4 @@
+https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz
 adal==1.2.2
 appdirs==1.4.3
 arrow==0.15.5
@@ -26,7 +27,6 @@ defusedxml==0.6.0
 demoji==0.1.5
 distlib==0.3.0
 emoji==0.5.4
-en-core-web-md==2.2.5
 entrypoints==0.3
 fastai==1.0.60
 fastai2==0.0.12
