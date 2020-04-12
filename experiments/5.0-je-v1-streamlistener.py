@@ -1,3 +1,4 @@
+import tweepy
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler, Stream
 from twitter_keys_tokens import keys_tokens
@@ -32,14 +33,14 @@ class TweetListener(StreamListener):
                         status.favorite_count
                     ]
                 )
-            except Exception as e:
+            except tweepy.TweepError as e:
                 print(e)
                 pass
         csvfile.close()
         return
 
     def on_error(self, status_code):
-        print("Encountered error with status code:", status_code)
+        print(f"Encountered error with status code: {status_code}")
         if status_code == 401:
             return False
 
@@ -70,4 +71,4 @@ def start_mining(queries):
 
 
 if __name__ == "__main__":
-    start_mining(["covid19, covid-19"])
+    start_mining(["covid19, cornavirus"])

@@ -11,13 +11,10 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-# import os (original imported these, however flake8 said they were unused)
-# import sys (original imported these, however flake8 said they were unused)
-
 # If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-# sys.path.insert(0, os.path.abspath('.'))
+# it is highly recommended to use relative imports. If you do want to treat as
+# absolute paths, remember that you will need to properly pip install your
+# project as a package.
 
 # -- General configuration ----------------------------------------------------
 
