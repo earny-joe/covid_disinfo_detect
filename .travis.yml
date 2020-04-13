@@ -1,0 +1,9 @@
+language: python
+python:
+ - '3.6'
+install:
+ - pip install -r requirements.txt
+# suppress flag is temporary, will be removed when tests are written
+script:
+ - pytest --suppress-no-test-exit-code
+ - flake8
