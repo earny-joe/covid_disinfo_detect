@@ -2,7 +2,8 @@
 experiments/playground_data/
 
 # everything in data folder
-data/
+data/raw_dailies/
+data/processed_dailies/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
