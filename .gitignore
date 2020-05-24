@@ -2,8 +2,8 @@
 experiments/playground_data/
 
 # everything in data folder
-data/raw_dailies/
-data/processed_dailies/
+data/processed_dailies
+data/raw_dailies
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -80,7 +80,7 @@ target/
 .spyproject/
 
 # Jupyter NB Checkpoints
-.ipynb_checkpoints/
+.ipynb_checkpoints
 
 # exclude data from source control by default
 /data/

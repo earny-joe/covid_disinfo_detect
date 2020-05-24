@@ -3,7 +3,7 @@ from pathlib import Path
 from google.cloud import storage
 
 
-def load_data(filename):
+def load_pkl_data(filename):
     """
     Given path to a specific data directory, loads in data from given filename
     """
@@ -37,10 +37,17 @@ def download_blob(bucket_name, source_blob_name, destination_file_name):
 def download_json(day):
     bucket_name = 'thepanacealab_covid19twitter'
     source_blob_name = f'dailies/{day}/{day}_clean-dataset.json'
-    downloadpath = Path.home()/'covid_disinfo_detect'/'experiments'/'playground_data'
-    download_blob(bucket_name, source_blob_name, downloadpath/f'{day}_clean-dataset.json')
-    
-    
+    downloadpath = (
+        Path.home() / 'covid_disinfo_detect' /
+        'experiments' / 'playground_data'
+    )
+    download_blob(
+        bucket_name,
+        source_blob_name,
+        downloadpath/f'{day}_clean-dataset.json'
+    )
+
+
 def load_data(filename, chunksize=10000):
     good_columns = [
         'created_at',
@@ -59,11 +66,14 @@ def load_data(filename, chunksize=10000):
         'quoted_status_permalink'
     ]
     chunks = pd.read_json(
-        f'playground_data/{filename}', lines=True, chunksize=chunksize,
-        dtype={'id_str': str, 'in_reply_to_status_id_str': str, 'quoted_status_id_str': str}
+        f'playground_data/{filename}',
+        lines=True,
+        chunksize=chunksize,
+        dtype={
+            'id_str': str,
+            'in_reply_to_status_id_str': str,
+            'quoted_status_id_str': str
+        }
     )
     df = pd.concat(chunk for chunk in chunks)[good_columns]
     return df
-    
-
-    
