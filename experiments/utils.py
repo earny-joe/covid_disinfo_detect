@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 from google.cloud import storage
+import re
 
 
 def load_pkl_data(filename):
@@ -77,3 +78,84 @@ def load_data(filename, chunksize=10000):
     )
     df = pd.concat(chunk for chunk in chunks)[good_columns]
     return df
+
+
+def entity_extraction(entity, component, urls=False, user_mentions=False):
+    try:
+        if urls is True:
+            if entity[component] == []:
+                return None
+            elif entity[component] != []:
+                return ','.join([url['url'] for url in entity[component]])
+        elif user_mentions is True:
+            if entity[component] == []:
+                return None
+            elif entity[component] != []:
+                return ','.join(
+                    [mention['screen_name'] for
+                     mention in entity[component]]
+                )
+        else:
+            if entity[component] == []:
+                return None
+            elif entity[component] != []:
+                return ','.join([comp['text'] for comp in entity[component]])
+    except Exception:
+        return None
+
+
+def source_extract(text):
+    try:
+        regex = re.compile(r'(?<=>).*?(?=<)', re.I)
+        return regex.search(text).group()
+    except AttributeError:
+        return None
+
+
+def quoted_status_extract(status):
+    try:
+        return status['url']
+    except Exception:
+        return None
+
+
+def clean_panacea_data(dataframe):
+    user_components = [
+        'created_at',
+        'description',
+        'favourites_count',
+        'followers_count',
+        'friends_count',
+        'id_str',
+        'location',
+        'name',
+        'profile_image_url_https',
+        'screen_name',
+        'statuses_count',
+        'verified'
+    ]
+    dataframe['hashtags'] = dataframe['entities']\
+        .apply(lambda x: entity_extraction(x, 'hashtags'))
+    dataframe['symbols'] = dataframe['entities']\
+        .apply(lambda x: entity_extraction(x, 'symbols'))
+    dataframe['urls'] = dataframe['entities']\
+        .apply(lambda x: entity_extraction(x, 'urls', urls=True))
+    dataframe['user_mentions'] = dataframe['entities']\
+        .apply(lambda x: entity_extraction(x, 'user_mentions',
+                                           user_mentions=True))
+    dataframe['tweet_source'] = dataframe['source'].apply(source_extract)
+    for comp in user_components:
+        dataframe[f'user_{comp}'] = dataframe['user']\
+            .apply(lambda user: user[comp])
+    dataframe['quoted_status_url'] = dataframe['quoted_status_permalink']\
+        .apply(quoted_status_extract)
+    dataframe.drop(
+        labels=[
+            'user',
+            'entities',
+            'source',
+            'quoted_status_permalink'
+        ], axis=1, inplace=True
+    )
+    dataframe.fillna('none', inplace=True)
+    return dataframe
