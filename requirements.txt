@@ -130,6 +130,7 @@ tornado==6.0.4
 tqdm==4.43.0
 traitlets==4.3.3
 tweepy==3.8.0
+twarc==1.8.3
 urllib3==1.25.7
 utils==1.0.1
 vaderSentiment==3.3.1

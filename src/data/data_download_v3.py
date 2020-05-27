@@ -179,7 +179,7 @@ def twarc_gather(myrawdatapath, daily_list):
             )
             print(
                 f'JSON file uploaded to Storage Bucket,',
-                'now removing JSON from {day} folder...'
+                f'now removing JSON from {day} folder...'
             )
             filepath = daypath / f'{day}_clean-dataset.json'
             # remove JSON file
