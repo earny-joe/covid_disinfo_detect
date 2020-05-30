@@ -49,7 +49,7 @@ def download_json(day):
     )
 
 
-def load_data(filename, chunksize=10000):
+def load_data(day, chunksize=10000):
     good_columns = [
         'created_at',
         'entities',
@@ -67,7 +67,7 @@ def load_data(filename, chunksize=10000):
         'quoted_status_permalink'
     ]
     chunks = pd.read_json(
-        f'playground_data/{filename}',
+        f'playground_data/{day}_clean-dataset.json',
         lines=True,
         chunksize=chunksize,
         dtype={
