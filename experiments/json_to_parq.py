@@ -1,4 +1,6 @@
 import pandas as pd
+from google.cloud import storage
+from google.cloud import bigquery
 
 
 def load_from_gcs(bucket_path):
@@ -66,10 +68,48 @@ def data_prep_wrapper(day):
     print(f'{day} successfully converted and stored in Storage.')
 
 
+def list_json_dates(bucket_name='thepanacealab_covid19twitter'):
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+    blobs = bucket.list_blobs(prefix='dailies/')
+    json_files = [
+        str(i).split(',')[1].strip() for i in blobs 
+        if str(i).split(',')[1].endswith('.json')
+    ]
+    json_dates = [i.split('/')[1] for i in json_files]
+    return json_dates
+
+
+def list_parquet_dates(bucket_name='thepanacealab_covid19twitter'):
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+    blobs = bucket.list_blobs(prefix='dailies/')
+    parquet_files = [
+        str(i).split(',')[1].strip() for i in blobs 
+        if str(i).split(',')[1].endswith('.parquet')
+    ]
+    parquet_dates = [
+        i.split('/')[1] for i in parquet_files
+    ]
+    return parquet_dates
+
+
+def need_parquet_dates():
+    json_dates = list_json_dates()
+    parquet_dates = list_parquet_dates()
+    need_parquet = sorted(list(set(json_dates) - set(parquet_dates)))
+    return need_parquet[::-1]
+
+
 def main():
-    print('Date Format:\tYYYY-MM-DD')
-    day = input('What day would you like to convert to parquet?\n')
-    data_prep_wrapper(day)
+    need_parquet = need_parquet_dates()
+    print(
+        f'Need to generate {len(need_parquet)} for the following dates:\n'
+        + f'{need_parquet}\n'
+    )
+    for day in need_parquet:
+        print(f'Converting data for {day}...')
+        data_prep_wrapper(day)
 
 
 if __name__ == '__main__':
