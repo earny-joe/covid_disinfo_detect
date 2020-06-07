@@ -8,7 +8,7 @@ import pickle
 import umap
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, CategoricalColorMapper
-from bokeh.palettes import Spectral10
+from bokeh.palettes import viridis
 
 
 def path_and_files():
@@ -83,12 +83,13 @@ def bokeh_df(X_dr, df):
 
 
 def bokeh_plot(df):
+    num_colors = len(df.narrative.unique())
     datasource = ColumnDataSource(df)
     color_mapping = CategoricalColorMapper(
         factors=[
             str(x) for x in df.narrative.unique()
         ],
-        palette=Spectral10
+        palette=viridis(num_colors)
     )
     TOOLTIPS = [
         ('Tweet ID', '@tweet_id'),
