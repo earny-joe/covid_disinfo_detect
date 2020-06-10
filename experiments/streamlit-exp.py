@@ -2,21 +2,16 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 import glob
-import matplotlib.pyplot as plt
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import pickle
-import umap
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, CategoricalColorMapper
 from bokeh.palettes import viridis
 
 
 def path_and_files():
-    dirpath = Path.cwd()
-    datapath = dirpath/'data'/'narrative_tweets'
-    narrative_files = glob.glob(
-        f'{datapath}/*/*.json'
-    )
+    datapath = Path.cwd().parent / 'data' / 'misinformation_narratives'
+    narrative_files = glob.glob(f'{datapath}/*/*.json')
     return datapath, narrative_files
 
 
@@ -51,7 +46,7 @@ def load_all_narratives(narrative_files):
 
 
 def load_embeddings(filename):
-    path = Path().cwd() / 'experiments/playground_data'
+    path = Path().cwd() / 'playground_data'
     pkl_file = open(
         path / filename, 'rb'
     )
@@ -59,23 +54,9 @@ def load_embeddings(filename):
     return X
 
 
-def apply_umap(X):
-    dr = umap.UMAP(n_components=2, metric='cosine', spread=5)
-    dr.fit(X)
-    X_dr = dr.transform(X)
-    return X_dr
-
-
-def plot_reduced_2D(X_dr, dr_type):
-    _, ax = plt.subplots(figsize=(10, 10))
-    ax.scatter(X_dr[:, 0], X_dr[:, 1], alpha=0.8)
-    ax.set_title(dr_type+' with 2 components')
-    st.pyplot()
-
-
 @st.cache
-def bokeh_df(X_dr, df):
-    tweet_embed_df = pd.DataFrame(X_dr, columns=('x', 'y'))
+def bokeh_df(X, df):
+    tweet_embed_df = pd.DataFrame(X, columns=('x', 'y'))
     tweet_embed_df['tweet_id'] = [str(x) for x in df['id']]
     tweet_embed_df['tweet'] = [str(x) for x in df['tweet']]
     tweet_embed_df['narrative'] = [str(x) for x in df['narrative']]
@@ -83,13 +64,12 @@ def bokeh_df(X_dr, df):
 
 
 def bokeh_plot(df):
-    num_colors = len(df.narrative.unique())
     datasource = ColumnDataSource(df)
     color_mapping = CategoricalColorMapper(
         factors=[
             str(x) for x in df.narrative.unique()
         ],
-        palette=viridis(num_colors)
+        palette=viridis(n=len(df.narrative.unique()))
     )
     TOOLTIPS = [
         ('Tweet ID', '@tweet_id'),
@@ -118,9 +98,8 @@ def main():
     filename = st.sidebar.text_input('Enter the file name for embeddings', '')
     if filename:
         X = load_embeddings(filename)
-        X_dr = apply_umap(X)
         st.subheader('2D UMAP Projection of Tweet Embeddings')
-        tweet_embed_df = bokeh_df(X_dr, df)
+        tweet_embed_df = bokeh_df(X, df)
         bokeh_plot(tweet_embed_df)
 
 
