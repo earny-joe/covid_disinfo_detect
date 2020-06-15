@@ -1,55 +1,11 @@
+# Comment
 import pandas as pd
-from pathlib import Path
-from google.cloud import storage
 import re
+from google.cloud import storage
+from pathlib import Path
 
 
-def load_pkl_data(filename):
-    """
-    Given path to a specific data directory, loads in data from given filename
-    """
-    # change directory to where data is located
-    datapath = Path.cwd() / "playground_data"
-    # load in data with given filename
-    df = pd.read_pickle(datapath/filename)
-    # return dataframe
-    return df
-
-
-def download_blob(bucket_name, source_blob_name, destination_file_name):
-    """Downloads a blob from the bucket."""
-    # bucket_name = "your-bucket-name"
-    # source_blob_name = "storage-object-name"
-    # destination_file_name = "local/path/to/file"
-
-    storage_client = storage.Client()
-
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(source_blob_name)
-    blob.download_to_filename(destination_file_name)
-
-    print(
-        "Blob {} downloaded to {}.".format(
-            source_blob_name, destination_file_name
-        )
-    )
-
-
-def download_json(day):
-    bucket_name = 'thepanacealab_covid19twitter'
-    source_blob_name = f'dailies/{day}/{day}_clean-dataset.json'
-    downloadpath = (
-        Path.home() / 'covid_disinfo_detect' /
-        'experiments' / 'playground_data'
-    )
-    download_blob(
-        bucket_name,
-        source_blob_name,
-        downloadpath/f'{day}_clean-dataset.json'
-    )
-
-
-def load_data(day, chunksize=10000):
+def load_data(filename, chunksize=10000):
     good_columns = [
         'created_at',
         'entities',
@@ -67,7 +23,7 @@ def load_data(day, chunksize=10000):
         'quoted_status_permalink'
     ]
     chunks = pd.read_json(
-        f'playground_data/{day}_clean-dataset.json',
+        filename,
         lines=True,
         chunksize=chunksize,
         dtype={
@@ -92,8 +48,8 @@ def entity_extraction(entity, component, urls=False, user_mentions=False):
                 return None
             elif entity[component] != []:
                 return ','.join(
-                    [mention['screen_name'] for
-                     mention in entity[component]]
+                    [mention['screen_name'] for mention
+                     in entity[component]]
                 )
         else:
             if entity[component] == []:
@@ -149,13 +105,70 @@ def clean_panacea_data(dataframe):
             .apply(lambda user: user[comp])
     dataframe['quoted_status_url'] = dataframe['quoted_status_permalink']\
         .apply(quoted_status_extract)
-    dataframe.drop(
-        labels=[
-            'user',
-            'entities',
-            'source',
-            'quoted_status_permalink'
-        ], axis=1, inplace=True
-    )
+    dataframe.drop(labels=[
+        'user',
+        'entities',
+        'source',
+        'quoted_status_permalink'
+    ], axis=1, inplace=True)
     dataframe.fillna('none', inplace=True)
     return dataframe
+
+
+def cleaning_wrapper(date):
+    print('Loading data...')
+    df = load_data(f'{date}/{date}_clean-dataset.json')
+    print('Cleaning data...')
+    df = clean_panacea_data(dataframe=df)
+    print(f'Cleaned data, converting data for date {date} to pickle format...')
+    df.to_pickle(f'{date}/{date}_clean-dataset.pkl')
+
+
+def download_blob(bucket_name, source_blob_name, destination_file_name):
+    """Downloads a blob from the bucket."""
+    # bucket_name = "your-bucket-name"
+    # source_blob_name = "storage-object-name"
+    # destination_file_name = "local/path/to/file"
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(source_blob_name)
+    blob.download_to_filename(destination_file_name)
+    print(f"Blob {source_blob_name} downloaded to {destination_file_name}.")
+
+
+def upload_blob(bucket_name, source_file_name, destination_blob_name):
+    """Uploads a file to the bucket."""
+    # bucket_name = "your-bucket-name"
+    # source_file_name = "local/path/to/file"
+    # destination_blob_name = "storage-object-name"
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(source_file_name)
+    print(f"File {source_file_name} uploaded to {destination_blob_name}.")
+
+
+def main():
+    date = input('Date whose data will be cleaned (format: YYYY-MM-DD):\n')
+    bucket_name = 'thepanacealab_covid19twitter'
+    download_blob(
+        bucket_name=bucket_name,
+        source_blob_name=f'''
+        dailies/{date}/panacealab_{date}_clean-dataset.json
+        ''',
+        destination_file_name=f'{date}/{date}_clean-dataset.json'
+    )
+    cleaning_wrapper(date)
+    upload_blob(
+        bucket_name=bucket_name,
+        source_file_name=f'{date}/{date}_clean-dataset.pkl',
+        destination_blob_name=f'dailies/{date}/{date}_clean-dataset.pkl'
+    )
+    file_delete_path = Path.cwd() / date / f'{date}_clean-dataset.json'
+    file_delete_path.unlink()
+    print(f'{date}_clean-dataset.json removed from {date} folder.')
+
+
+if __name__ == '__main__':
+    main()

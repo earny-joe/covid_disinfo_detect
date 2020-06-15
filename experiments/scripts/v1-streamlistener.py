@@ -1,10 +1,10 @@
 import tweepy
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler, Stream
-from twitter_keys_tokens import keys_tokens
 import time
 import csv
 import sys
+import os
 
 
 class TweetListener(StreamListener):
@@ -28,9 +28,9 @@ class TweetListener(StreamListener):
                 csvwriter.writerow(
                     [
                         status.created_at, status.id_str, status.user.id_str,
-                        status.user.screen_name, status.user.name, status.text,
-                        status.reply_count, status.retweet_count,
-                        status.favorite_count
+                        status.user.screen_name, status.user.name,
+                        status.full_text, status.reply_count,
+                        status.retweet_count, status.favorite_count
                     ]
                 )
             except tweepy.TweepError as e:
@@ -59,10 +59,10 @@ class TweetListener(StreamListener):
 
 
 def start_mining(queries):
-    consumer_key = keys_tokens["API_KEY"]
-    consumer_secret = keys_tokens["API_SECRET"]
-    access_token = keys_tokens["ACCESS_TOKEN"]
-    access_token_secret = keys_tokens["ACCESS_SECRET"]
+    consumer_key = os.environ.get("API_KEY")
+    consumer_secret = os.environ.get("API_SECRET")
+    access_token = os.environ.get("ACCESS_TOKEN")
+    access_token_secret = os.environ.get("ACCESS_SECRET")
     listen = TweetListener()
     auth = OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
@@ -71,4 +71,5 @@ def start_mining(queries):
 
 
 if __name__ == "__main__":
-    start_mining(["covid19, cornavirus"])
+    lst = [item for item in input("Enter the list items : ").split()]
+    start_mining(lst)
