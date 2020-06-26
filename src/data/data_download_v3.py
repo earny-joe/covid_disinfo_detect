@@ -178,7 +178,7 @@ def twarc_gather(myrawdatapath, daily_list):
                 destination_blob_name=f'dailies/{day}/{day}_clean-dataset.json'
             )
             print(
-                f'JSON file uploaded to Storage Bucket,',
+                'JSON file uploaded to Storage Bucket,',
                 f'now removing JSON from {day} folder...'
             )
             filepath = daypath / f'{day}_clean-dataset.json'
@@ -209,7 +209,7 @@ def main_gather():
         f'\n{nojson}\n'
     )
     print(
-        f'Gathering data for the previous days without JSONs:' +
+        'Gathering data for the previous days without JSONs:' +
         f'\n{nojson[::-1]}'
     )
     twarc_gather(myrawdatapath, nojson[::-1])

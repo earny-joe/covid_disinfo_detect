@@ -198,7 +198,7 @@ def main_gather():
     previous3 = nojson[-3:]
     print(f'\nTotal of {len(nojson)} folders do not contain a \
     JSON file:\n{nojson}\n')
-    print(f'Gathering data for the previous 3 days without JSONs:')
+    print('Gathering data for the previous 3 days without JSONs:')
     twarc_gather(covidrawpath, previous3[::-1])
 
 

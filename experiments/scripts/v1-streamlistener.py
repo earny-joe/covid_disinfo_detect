@@ -11,6 +11,7 @@ class TweetListener(StreamListener):
     def __init__(self, api=None):
         self.api = api
         self.filename = "data_" + time.strftime("%Y%m%d") + ".csv"
+        self.num_tweets = 0
         csvfile = open(self.filename, "w")
         csvwriter = csv.writer(csvfile)
         csvwriter.writerow(
@@ -23,20 +24,35 @@ class TweetListener(StreamListener):
     def on_status(self, status):
         csvfile = open(self.filename, "a")
         csvwriter = csv.writer(csvfile)
-        if "RT @" not in status.text:
+        if hasattr(status, 'retweeted_status'):
+            pass
+        elif hasattr(status, 'extended_tweet') and self.num_tweets < 100:
             try:
                 csvwriter.writerow(
                     [
                         status.created_at, status.id_str, status.user.id_str,
                         status.user.screen_name, status.user.name,
-                        status.full_text, status.reply_count,
+                        status.extended_tweet.full_text, status.reply_count,
                         status.retweet_count, status.favorite_count
                     ]
                 )
+                self.num_tweet += 1
             except tweepy.TweepError as e:
                 print(e)
                 pass
-        csvfile.close()
+        elif self.num_tweets < 100:
+            try:
+                csvwriter.writerow(
+                    [
+                        status.created_at, status.id_str, status.user.id_str,
+                        status.user.screen_name, status.user.name,
+                        status.text, status.reply_count,
+                        status.retweet_count, status.favorite_count
+                    ]
+                )
+                self.num_tweet += 1
+            except Exception:
+                csvfile.close()
         return
 
     def on_error(self, status_code):
@@ -67,7 +83,7 @@ def start_mining(queries):
     auth = OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     stream = Stream(auth, listen)
-    stream.filter(track=queries, languages=["en"])
+    stream.filter(track=queries, languages=["en"], tweet_mode='extended')
 
 
 if __name__ == "__main__":
