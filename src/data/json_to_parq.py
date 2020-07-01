@@ -47,17 +47,23 @@ def clean_for_parquet(df):
 
 
 def parquet_to_gcs(df, day):
+    '''
+    Converts pandas dataframe for a given day into a parquet
+    file for storage.
+    '''
     df.to_parquet(
-        f'gs://thepanacealab_covid19twitter/dailies/'
-        + f'{day}/{day}_tweets.parquet'
+        f'gs://thepanacealab_covid19twitter/dailies/{day}/{day}_tweets.parquet'
     )
     print('Dataframe uploaded to bucket as parquet file.')
 
 
 def data_prep_wrapper(day):
+    '''
+    Wraps functions load_from_gcs, clean_for_parquet, and
+    parquet_to_gcs together to perform one after the other.
+    '''
     bucket_path = (
-        f'gs://thepanacealab_covid19twitter/dailies/'
-        + f'{day}/{day}_clean-dataset.json'
+        f'gs://thepanacealab_covid19twitter/dailies/{day}/{day}_clean-dataset.json'
     )
     print(f'Loading data for {day}...')
     df = load_from_gcs(bucket_path)
@@ -70,6 +76,9 @@ def data_prep_wrapper(day):
 
 
 def list_json_dates(bucket_name='thepanacealab_covid19twitter'):
+    '''
+    Gathers the dates of JSON files that are already stored in GCS
+    '''
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
     blobs = bucket.list_blobs(prefix='dailies/')
@@ -82,6 +91,9 @@ def list_json_dates(bucket_name='thepanacealab_covid19twitter'):
 
 
 def list_parquet_dates(bucket_name='thepanacealab_covid19twitter'):
+    '''
+    Gathers the data of parquet files already stored in GCS
+    '''
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
     blobs = bucket.list_blobs(prefix='dailies/')
@@ -96,6 +108,9 @@ def list_parquet_dates(bucket_name='thepanacealab_covid19twitter'):
 
 
 def need_parquet_dates():
+    '''
+    Gather dates that have JSON files, but no accompanying parquet file
+    '''
     json_dates = list_json_dates()
     parquet_dates = list_parquet_dates()
     need_parquet = sorted(list(set(json_dates) - set(parquet_dates)))
@@ -103,6 +118,11 @@ def need_parquet_dates():
 
 
 def main():
+    '''
+    Main application that converts all JSONs whose dates are not yet in
+    parquet format, and converts them, and stores them in same folder
+    together with the raw JSON
+    '''
     need_parquet = need_parquet_dates()
     print(
         f'Need to generate {len(need_parquet)} for the following dates:\n'

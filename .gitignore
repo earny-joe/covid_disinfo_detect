@@ -54,6 +54,9 @@ coverage.xml
 *.mo
 *.pot
 
+# any html elements
+*.html
+
 # Django stuff:
 *.log
 
