@@ -125,8 +125,7 @@ def main():
     '''
     need_parquet = need_parquet_dates()
     print(
-        f'Need to generate {len(need_parquet)} for the following dates:\n'
-        + f'{need_parquet}\n'
+        f'Need to generate {len(need_parquet)} for the following dates:\n{need_parquet}\n'
     )
     for day in need_parquet:
         print(f'Converting data for {day}...')

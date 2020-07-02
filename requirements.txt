@@ -1,5 +1,7 @@
 bokeh==2.1.1
-sentence_transformers==0.2.6.2
+transformers>=2.11.0
+sentence_transformers>=0.2.6.2
+scikit-learn==0.22.1
 pandas==1.0.5
 streamlit==0.62.0
 scipy==1.4.1
@@ -17,3 +19,7 @@ flake8>=3.7.9
 google-cloud-storage==1.29.0
 pytest-custom-exit-code==0.3.0
 twarc>=1.10.0
+pyarrow==0.17.1
+gcsfs==0.6.2
+numba==0.50.1
+swifter==0.305
