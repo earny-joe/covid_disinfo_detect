@@ -1,3 +1,13 @@
+# any dev related files in src
+src/*/dev_files
+src/*/dev_nbs
+
+# all notebooks in source code
+src/*/*.ipynb
+
+# dask worker spaces
+dask-worker-space
+
 # everything in playground data
 experiments/playground_data/
 

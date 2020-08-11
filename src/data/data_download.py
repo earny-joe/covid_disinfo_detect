@@ -1,4 +1,4 @@
-# _Development: Version 3 of Data Ingestion Python Script_
+# Data Ingestion Python Script
 import git
 from pathlib import Path
 import pandas as pd
@@ -165,8 +165,7 @@ def twarc_gather(myrawdatapath, daily_list):
     for day in daily_list:
         daypath = myrawdatapath / day
         twarc_command = (
-            f'twarc hydrate {daypath}/{day}_clean-dataset.txt > ' +
-            f'{daypath}/{day}_clean-dataset.json'
+            f'twarc hydrate {daypath}/{day}_clean-dataset.txt > {daypath}/{day}_clean-dataset.json'
         )
         try:
             print(f'Hydrating data for {day}...')
@@ -205,12 +204,10 @@ def main_gather():
     # see what daily data we do not have in storage bucket
     nojson = storage_check(daily_list)
     print(
-        f'\nTotal of {len(nojson)} folders do not contain a JSON file:' +
-        f'\n{nojson}\n'
+        f'\nTotal of {len(nojson)} folders do not contain a JSON file:\n{nojson}\n'
     )
     print(
-        'Gathering data for the previous days without JSONs:' +
-        f'\n{nojson[::-1]}'
+        f'Gathering data for the previous days without JSONs:\n{nojson[::-1]}'
     )
     twarc_gather(myrawdatapath, nojson[::-1])
 
