@@ -42,12 +42,12 @@ def gen_embeds_narrative_df(tweet_embeddings, df):
     return tweet_embed_with_narrative
 
 
-def generate_mean_embeddings(model, df, column_name='normalized_tweet'):
+def generate_median_embeddings(model, df, column_name='normalized_tweet'):
     '''
     Given a SentenceTransformer model, a pandas DataFrame, and a column name
     (whose default value will take 'bert_tweet'), we'll encode a set of
     (unnormalized) embeddings on tweet text within the dataframe and return
-    a dataframe with the mean embeddings for each narrative
+    a dataframe with the median embeddings for each narrative
     '''
     tweets = df[column_name]
     # generate embeddings with model
@@ -55,13 +55,13 @@ def generate_mean_embeddings(model, df, column_name='normalized_tweet'):
     # create dataframe of tweet embeddings
     tweet_embeddings_df = gen_embeds_narrative_df(tweet_embeddings, df)
     # group by narrative and then take mean embedding
-    mean_narratives = tweet_embeddings_df.groupby('narrative').mean().reset_index(drop=False)
+    median_narratives = tweet_embeddings_df.groupby('narrative').median().reset_index(drop=False)
     # group by narrative and then return the standard deviation
     std_narratives = tweet_embeddings_df.groupby('narrative').std().reset_index(drop=False)
     # assert len(mean_narratives.index) == 20
     # assert len(std_narratives.index) == 20
 
-    return mean_narratives, std_narratives
+    return median_narratives, std_narratives
 
 
 def main():
@@ -69,23 +69,24 @@ def main():
     Main application: generates mean embeddings for misinformation narratives
     """
     utils.set_seed(config.SEED_VALUE)
-
-    file_check = config.NARR_STORAGE_PATH / config.MEAN_NARR_FILENAME
+    file_check = config.NARR_STORAGE_PATH / config.MEDIAN_NARR_FILENAME
 
     if file_check.is_file():
         print(f'Skipping the embedding generation step because {file_check} already exists.\n')
     else:
-        print('Generating CSV files for mean and st. dev. of narrative embeddings...\n')
+        print('Generating CSV files for median and st. dev. of narrative embeddings...\n')
+        # load in narrative data
         df_narr = load_narrative_data()
+        # load model to generate embedding values
         model = utils.create_embedding_model()
-
-        mean_narratives, std_narratives = generate_mean_embeddings(
+        # create dataframes that contain median & st dev embeddings
+        median_narratives, std_narratives = generate_median_embeddings(
             model,
             df_narr
         )
 
-        mean_narratives.to_csv(
-            f'{config.NARR_STORAGE_PATH}/{config.MEAN_NARR_FILENAME}',
+        median_narratives.to_csv(
+            f'{config.NARR_STORAGE_PATH}/{config.MEDIAN_NARR_FILENAME}',
             index=False
         )
 
@@ -97,7 +98,7 @@ def main():
         print(
             '\nSaved the mean narrative embeddings, in addition to their standard deviations.\n',
             'Files are located at:\n\n'
-            f'MEAN: {config.NARR_STORAGE_PATH}/{config.MEAN_NARR_FILENAME}', '\n',
+            f'MEAN: {config.NARR_STORAGE_PATH}/{config.MEDIAN_NARR_FILENAME}', '\n',
             f'STDEV: {config.NARR_STORAGE_PATH}/{config.STD_NARR_FILENAME}', '\n'
         )
 

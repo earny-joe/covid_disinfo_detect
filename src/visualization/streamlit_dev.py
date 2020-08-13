@@ -1,16 +1,13 @@
-import sys
-from pathlib import Path
 import pandas as pd
 import streamlit as st
 import seaborn as sns
 from google.cloud import storage
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, CategoricalColorMapper
-sys.path.insert(0, f'{Path.cwd()}/')
-import config
+from settings.config import BUCKET_NAME, NARR_STORAGE_PATH, MEDIAN_NARR_DR_FILENAME, TOOLTIPS_TWEETS
 
 
-def available_dates(bucket_name='thepanacealab_covid19twitter'):
+def available_dates(bucket_name=BUCKET_NAME):
     '''
     Gathers the dates of tweet-related parquet files already stored in GCS
     '''
@@ -33,7 +30,7 @@ def load_daily_data(day):
     Temp function to load test data for Streamlit visual
     """
     filename = (
-        f'gs://thepanacealab_covid19twitter/dailies/{day}/{day}_embeddings_svddr.parquet'
+        f'gs://my_sm_project_data/dailies/{day}/{day}_embeddings_svddr.parquet'
     )
 
     df_day = pd.read_parquet(
@@ -45,10 +42,10 @@ def load_daily_data(day):
 
 def load_narrative_data():
     """
-    Loads in 2D mean embeddings for various misinfo narratives
+    Loads in 2D median embeddings for various misinfo narratives
     """
     df_narr = pd.read_csv(
-        f'{config.MEAN_NARR_STORAGE_PATH}/{config.MEAN_NARR_DR_FILENAME}',
+        f'{NARR_STORAGE_PATH}/{MEDIAN_NARR_DR_FILENAME}',
         index_col=False
     )
     return df_narr
@@ -121,7 +118,7 @@ def bokeh_plot(df_day, df_narr, max_width):
         plot_width=max_width,
         plot_height=1000,
         title='COVID-related Tweets & COVID Misinfo Narratives',
-        tooltips=config.TOOLTIPS_TWEETS
+        tooltips=TOOLTIPS_TWEETS
     )
 
     plot.circle(

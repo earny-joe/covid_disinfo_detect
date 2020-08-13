@@ -7,7 +7,7 @@ def list_reqs(fname='requirements.txt'):
 
 
 setup(
-    name='src',
+    name='covid_disinfo_detect',
     packages=find_packages(),
     version='0.1.0',
     description='A project the attempts to detect \
