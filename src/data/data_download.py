@@ -4,13 +4,14 @@ from pathlib import Path
 import pandas as pd
 import subprocess
 from google.cloud import storage
-
-
-def setpath():
-    return Path.home()
+from settings.config import BUCKET_NAME
 
 
 def clone_panacea_repo(homepath):
+    """
+    Clones Panacea Lab's repo containing Twitter data they've gathered
+    around COVID.
+    """
     try:
         print('Cloning repository...')
         gitrepo = 'https://github.com/thepanacealab/covid19_twitter.git'
@@ -21,12 +22,19 @@ def clone_panacea_repo(homepath):
 
 
 def panacea_pull(panacearepopath):
+    """
+    Pulls most recent updates from Panacea Lab's GitHub repository.
+    """
     g = git.cmd.Git(panacearepopath)
     result = g.pull()
     return result
 
 
 def make_raw_folders(myrepopath, daily_list):
+    """
+    Creates folders within data sub-folder of covid_disinfo_detect
+    project repo, that'll store raw daily Twitter data.
+    """
     # for day in list of daily folders from Panacea Labs GitHub repo
     for day in daily_list:
         if (myrepopath / 'data' / 'raw_dailies' / day).exists():
@@ -37,6 +45,10 @@ def make_raw_folders(myrepopath, daily_list):
 
 
 def make_proc_folders(myrepopath, daily_list):
+    """
+    Creates folders within data sub-folder of covid_disinfo_detect
+    project repo that'll store processed daily Twitter data.
+    """
     # for day in list of daily folders from Panacea Labs GitHub repo
     for day in daily_list:
         if (myrepopath / 'data' / 'processed_dailies' / day).exists():
@@ -47,6 +59,10 @@ def make_proc_folders(myrepopath, daily_list):
 
 
 def get_txt_data(myrepopath, panacearepopath, daily_list):
+    """
+    Gathers txt files for daily Twitter data, which contain tweet IDs of
+    COVID-related Tweets gathered by Panacea Labs
+    """
     # for day in list of daily folders from Panacea Labs GitHub Repo
     for day in daily_list:
         # create path variables to access data in Panacea repo
@@ -75,10 +91,14 @@ def get_txt_data(myrepopath, panacearepopath, daily_list):
 
 
 def main_setup():
+    """
+    Main program that gathers data needed to scrape Tweet IDs from Twitter
+    via twarc.
+    """
     # set up path to current working directory & path to directory
     # containing Panacea data
-    homepath = setpath()
-    myrepopath = Path.cwd().parent.parent
+    homepath = Path.home()
+    myrepopath = Path.cwd()
     panacearepopath = homepath / 'thepanacealab_covid19'
     if myrepopath.exists():
         pass
@@ -128,6 +148,10 @@ def main_setup():
 
 
 def blob_exists(bucket_name, source_file_name):
+    """
+    Check to see if a particular file (i.e. blob) exists in Google
+    Cloud Storage.
+    """
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(source_file_name)
@@ -135,7 +159,11 @@ def blob_exists(bucket_name, source_file_name):
 
 
 def storage_check(daily_list):
-    bucket_name = 'thepanacealab_covid19twitter'
+    """
+    Loop through dates to see which day's do not have raw JSON file
+    of daily COVID tweets.
+    """
+    bucket_name = BUCKET_NAME
     nojson = []
     for day in daily_list:
         src_file_name1 = f'dailies/{day}/{day}_clean-dataset.json'
@@ -150,7 +178,9 @@ def storage_check(daily_list):
 
 
 def upload_blob(bucket_name, source_file_name, destination_blob_name):
-    """Uploads a file to the bucket."""
+    """
+    Uploads a file to GCS bucket.
+    """
     # bucket_name = "your-bucket-name"
     # source_file_name = "local/path/to/file"
     # destination_blob_name = "storage-object-name"
@@ -172,9 +202,9 @@ def twarc_gather(myrawdatapath, daily_list):
             subprocess.call(twarc_command, shell=True)
             print('Done hydrating data, uploading to bucket...')
             upload_blob(
-                bucket_name='thepanacealab_covid19twitter',
-                source_file_name=f'{daypath}/{day}_clean-dataset.json',
-                destination_blob_name=f'dailies/{day}/{day}_clean-dataset.json'
+                BUCKET_NAME,
+                f'{daypath}/{day}_clean-dataset.json',
+                f'dailies/{day}/{day}_clean-dataset.json'
             )
             print(
                 'JSON file uploaded to Storage Bucket,',
@@ -191,8 +221,8 @@ def twarc_gather(myrawdatapath, daily_list):
 def main_gather():
     # set up path to current working directory &
     # path to directory containing Panacea data
-    homepath = setpath()
-    myrepopath = Path.cwd().parent.parent
+    homepath = Path.home()
+    myrepopath = Path.cwd()
     panacearepopath = homepath / 'thepanacealab_covid19'
     myrawdatapath = myrepopath / 'data' / 'raw_dailies'
     # create list of daily folders located in Panacea repo
@@ -209,7 +239,8 @@ def main_gather():
     print(
         f'Gathering data for the previous days without JSONs:\n{nojson[::-1]}'
     )
-    twarc_gather(myrawdatapath, nojson[::-1])
+    # testing with only two days
+    twarc_gather(myrawdatapath, nojson[::-1][:2])
 
 
 def main_program():

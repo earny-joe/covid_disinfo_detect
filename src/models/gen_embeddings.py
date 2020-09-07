@@ -1,14 +1,9 @@
 '''
 This script is a work-in-progress and needs further development.
-Right now all of the functions below have successfully run within
-a notebook that is being used in tandem to develop this script.
-In the next branch, I will continue to build this out, namely by
-adding a config file and also by figuring out a more appropriate
-means by which to store embeddings, most likely in a database
-of some sort (and not within the 'data' sub-folder of the directory)
+It is attempting to save the embeddings as numpy files, and Tweet IDs as
+a CSV, as opposed to both being in a single CSV, which results in huge file
+size.
 '''
-import sys
-from pathlib import Path
 import utils
 import pandas as pd
 from google.cloud import storage
@@ -19,12 +14,12 @@ from sentence_transformers import SentenceTransformer
 import re
 import numpy as np
 from pprint import pprint
-sys.path.insert(0, f'{Path.cwd()}/')
-import config
+from tensorflow.python.lib.io import file_io
+from settings.config import EMBED_MODEL_NAME, BUCKET_NAME
 tqdm.pandas()
 
 
-def list_parquet_tweet_dates(bucket_name='thepanacealab_covid19twitter'):
+def list_parquet_tweet_dates(bucket_name=BUCKET_NAME):
     '''
     Gathers the dates of tweet-related parquet files already stored in GCS
     '''
@@ -33,7 +28,7 @@ def list_parquet_tweet_dates(bucket_name='thepanacealab_covid19twitter'):
     blobs = bucket.list_blobs(prefix='dailies/')
     parquet_files = [
         str(i).split(',')[1].strip() for i in blobs
-        if str(i).split(',')[1].endswith('_tweets.parquet')
+        if str(i).split(',')[1].endswith('_twitter_data.parquet')
     ]
     parquet_tweet_dates = [
         i.split('/')[1] for i in parquet_files
@@ -41,21 +36,22 @@ def list_parquet_tweet_dates(bucket_name='thepanacealab_covid19twitter'):
     return parquet_tweet_dates
 
 
-def list_csv_embedding_dates(bucket_name='thepanacealab_covid19twitter'):
+def list_npy_embedding_dates(bucket_name=BUCKET_NAME):
     '''
     Gathers the dates of embedding-related parquet files already stored in GCS
+    MODIFICATION OF list_csv_embedding_dates function in orig file
     '''
     client = storage.Client()
     bucket = client.get_bucket(bucket_name)
     blobs = bucket.list_blobs(prefix='dailies/')
-    csv_files = [
+    npy_files = [
         str(i).split(',')[1].strip() for i in blobs
-        if str(i).split(',')[1].endswith('_embeddings.csv')
+        if str(i).split(',')[1].endswith('_embeddings.npy')
     ]
-    csv_embed_dates = [
-        i.split('/')[1] for i in csv_files
+    npy_embed_dates = [
+        i.split('/')[1] for i in npy_files
     ]
-    return csv_embed_dates
+    return npy_embed_dates
 
 
 def dates_need_embeddings():
@@ -64,11 +60,14 @@ def dates_need_embeddings():
     parquet file.
     '''
     parquet_tweet_dates = list_parquet_tweet_dates()
-    csv_embed_dates = list_csv_embedding_dates()
+    csv_embed_dates = list_npy_embedding_dates()
+
     need_embeddings = sorted(list(
         set(parquet_tweet_dates) - set(csv_embed_dates)
     ))
-    return need_embeddings
+
+    # for testing purposes only grabbing two most recent dates
+    return need_embeddings[::-1][:2]
 
 
 def normalize_token(token):
@@ -170,7 +169,7 @@ def embedding_data_prep_wrapper(day):
     Preps data for embeddings
     """
     bucket_path = (
-        f'gs://thepanacealab_covid19twitter/dailies/{day}/{day}_tweets.parquet'
+        f'gs://my_sm_project_data/dailies/{day}/{day}_twitter_data.parquet'
     )
     # load tweet parquet data
     df = load_parquet_data(bucket_path)
@@ -185,12 +184,13 @@ def create_embedding_model(embed_model_name):
     Given string of pretrain embedding available in sentence-transformers
     library, create a SentenceTransformer object to encode embeddings with
     '''
-    print('Loading SentenceTransformer...\n')
+    print('Loading SentenceTransformer...')
     model = SentenceTransformer(embed_model_name)
+    print(f'{embed_model_name} model loaded!\n')
     return model
 
 
-def generate_embeddings(model, tweets):
+def generate_embeddings(model, tweets, day):
     '''
     Given a SentenceTransformer model object, and a tweets object,
     containing a pandas Series of tweets, use embedding model to
@@ -199,8 +199,12 @@ def generate_embeddings(model, tweets):
     print('Generating tweet embeddings...\n')
 
     # encode the tweets
-    tweet_embeddings = model.encode(tweets, show_progress_bar=True)
-
+    tweet_embeddings = model.encode(
+        tweets,
+        batch_size=4,
+        show_progress_bar=True,
+        num_workers=8
+    )
     # since embeddings returned as list of arrays, convert to numpy array
     return np.array(tweet_embeddings)
 
@@ -225,44 +229,55 @@ def generate_embedding_df(tweet_ids, tweet_embeddings):
     return df
 
 
-def embedding_csv_to_gcs(df, day):
-    '''
-    Converts pandas dataframe for a given day into a parquet
-    file for storage.
-    '''
-    df.to_csv(
-        f'gs://thepanacealab_covid19twitter/dailies/{day}/{day}_embeddings.csv',
-        index=False
+def save_embeddings_npy_file(tweet_embeddings, day):
+    """
+    123
+    """
+    dest = f'gs://my_sm_project_data/dailies/{day}/{day}_embeddings.npy'
+
+    f = file_io.FileIO(dest, 'w')
+    np.save(
+        f, tweet_embeddings
     )
-    print(f'Dataframe of embeddings for {day} uploaded to bucket as CSV file.\n')
+
+    print(f'\nEmbeddings for {day} saved at: {dest}\n')
 
 
 def main():
     # set seeds
-    utils.set_seed(config.SEED_VALUE)
+    utils.set_seed()
 
+    # gather dates that need embeddings
     need_embeddings = dates_need_embeddings()
-    embed_model_name = config.EMBED_MODEL_NAME
     print('Dates that need embeddings')
     print('-' * 30)
     pprint(need_embeddings)
+    print('\n')
+
+    # create Sentence Transformer model from distilbert
+    embed_model_name = EMBED_MODEL_NAME
+    model = create_embedding_model(embed_model_name)
 
     for day in need_embeddings:
         print(f'Generating embeddings for {day}.\n')
         # gather data
         df = embedding_data_prep_wrapper(day)
         # gather tweets
-        tweets = df['normalized_tweet']
-        # gather tweet IDs that are associated with first 1k tweets
-        tweet_ids = df['id_str']
-        # create Sentence Transformer model from distilbert
-        model = create_embedding_model(embed_model_name)
-        # generate tweet embeddings
-        tweet_embeddings = generate_embeddings(model, tweets)
-        # generate df with tweet IDs and associated embedding values
-        embeddings_df = generate_embedding_df(tweet_ids, tweet_embeddings)
-        # save to GCS
-        embedding_csv_to_gcs(embeddings_df, day)
+        tweets = df['normalized_tweet'].tolist()
+
+        # save tweet IDs as CSV
+        print('\nSaving tweet IDs as CSV file...\n')
+        csv_file_path = f'gs://my_sm_project_data/dailies/{day}/{day}_embeddings_ID.csv'
+        df['id_str'].to_csv(
+            csv_file_path,
+            index=False
+        )
+        print(f'Tweet IDs for {day} saved at: {csv_file_path}\n')
+
+        # gen embeddings as store as NPY file in GCS
+        tweet_embeddings = generate_embeddings(model, tweets, day)
+        # save as NPY file
+        save_embeddings_npy_file(tweet_embeddings, day)
 
 
 if __name__ == '__main__':

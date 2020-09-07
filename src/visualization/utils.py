@@ -2,7 +2,7 @@ import os
 import random
 import numpy as np
 import torch
-from config import SEED_VALUE
+from settings.config import SEED_VALUE
 
 
 def set_seed(seed=SEED_VALUE):

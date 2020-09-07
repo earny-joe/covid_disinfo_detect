@@ -1,5 +1,3 @@
-import sys
-from pathlib import Path
 import pickle
 import pandas as pd
 from sklearn.decomposition import TruncatedSVD
@@ -7,8 +5,7 @@ from google.cloud import storage
 from dask.distributed import Client
 import dask.dataframe as dd
 import joblib
-sys.path.insert(0, f'{Path.cwd()}/')
-import config
+import settings.config as config
 
 
 def setup_dask_client():
@@ -67,7 +64,7 @@ def model_file_check():
         return model
 
 
-def list_csv_embedding_dates(bucket_name='thepanacealab_covid19twitter'):
+def list_csv_embedding_dates(bucket_name=config.BUCKET_NAME):
     '''
     Gathers the dates of embedding-related CSV files already stored in GCS
     '''
@@ -84,7 +81,7 @@ def list_csv_embedding_dates(bucket_name='thepanacealab_covid19twitter'):
     return csv_embed_dates
 
 
-def list_csv_dr_embed_dates(bucket_name='thepanacealab_covid19twitter'):
+def list_csv_dr_embed_dates(bucket_name=config.BUCKET_NAME):
     '''
     Gathers the dates of embedding-related parquet files already stored in GCS
     '''
@@ -137,7 +134,7 @@ def load_parquet_data(day):
     returns a Pandas DataFrame
     '''
     bucket_path_parquet = (
-        f'gs://thepanacealab_covid19twitter/dailies/{day}/{day}_tweets.parquet'
+        f'gs://my_sm_project_data/dailies/{day}/{day}_twitter_data.parquet'
     )
     # load in parquet file
     df = pd.read_parquet(
@@ -176,7 +173,7 @@ def gather_daily_embedding_data(day):
     with day's tweets to be combined in final data set.
     """
     bucket_path_csv = (
-        f'gs://thepanacealab_covid19twitter/dailies/{day}/{day}_embeddings.csv'
+        f'gs://my_sm_project_data/dailies/{day}/{day}_embeddings.csv'
     )
     # gather dataframe for embeddings
     df_embeddings = load_embedding_csv_data(bucket_path_csv)
@@ -218,7 +215,7 @@ def upload_dr_data_gcs(df_final, day):
     parquet file for storage
     """
     df_final.to_parquet(
-        f'gs://thepanacealab_covid19twitter/dailies/{day}/{day}_embeddings_svddr.parquet'
+        f'gs://my_sm_project_data/dailies/{day}/{day}_embeddings_svddr.parquet'
     )
     print(f'Dataframe of DR embeddings for {day} uploaded to bucket as parquet file.\n')
 
@@ -239,4 +236,5 @@ def main():
 
 if __name__ == "__main__":
     client = setup_dask_client()
+    print(f'Dask Client information: {client}\n')
     main()
