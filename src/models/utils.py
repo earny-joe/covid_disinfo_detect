@@ -7,6 +7,8 @@ from nltk.tokenize import TweetTokenizer
 from emoji import demojize
 import re
 from settings.config import SEED_VALUE, EMBED_MODEL_NAME
+from tqdm.auto import tqdm
+tqdm.pandas()
 
 
 def set_seed(seed=SEED_VALUE):
@@ -24,13 +26,14 @@ def set_seed(seed=SEED_VALUE):
     print(f'\nSeed value set as {seed}.\n')
 
 
-def create_embedding_model(model_name=EMBED_MODEL_NAME):
-    """
+def create_embedding_model(embed_model_name=EMBED_MODEL_NAME):
+    '''
     Given string of pretrain embedding available in sentence-transformers
     library, create a SentenceTransformer object to encode embeddings with
-    """
-    model = SentenceTransformer(model_name)
-    print(f'Loaded {model_name}.\n')
+    '''
+    print('Loading SentenceTransformer...')
+    model = SentenceTransformer(embed_model_name)
+    print(f'{embed_model_name} model loaded!\n')
     return model
 
 
@@ -89,3 +92,21 @@ def normalize_tweet(tweet):
     )
 
     return " ".join(normTweet.split())
+
+
+def clean_for_embeddings(df):
+    '''
+    Given input dataframe, creates subset of only English
+    tweets, and applies text normalization according to
+    normalize_tweet function above.
+    '''
+    print('Cleaning data & applying text normalization...\n')
+    # subset of English-only tweets
+    df_english = df[df['lang'] == 'en'].reset_index(drop=True)
+
+    # text normalization
+    df_english['normalized_tweet'] = df_english['full_text'].progress_apply(
+        lambda tweet: normalize_tweet(tweet)
+    ).str.lower()
+
+    return df_english

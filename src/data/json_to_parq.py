@@ -61,8 +61,9 @@ def data_prep_wrapper(day):
     parquet_to_gcs together to perform one after the other.
     """
     bucket_path = (
-        f'gs://{BUCKET_NAME}/dailies/{day}/{day}_clean-dataset.json.gz'
+        f'gs://{BUCKET_NAME}/compress_dailies/{day}_clean-dataset.json.gz'
     )
+
     print(f'\nLoading data for {day}...\n')
     df = load_from_gcs(bucket_path)
 
