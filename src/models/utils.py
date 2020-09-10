@@ -6,8 +6,9 @@ from sentence_transformers import SentenceTransformer
 from nltk.tokenize import TweetTokenizer
 from emoji import demojize
 import re
-from settings.config import SEED_VALUE, EMBED_MODEL_NAME
+from settings.config import SEED_VALUE, EMBED_MODEL_NAME, BUCKET_NAME
 from tqdm.auto import tqdm
+from google.cloud import storage
 tqdm.pandas()
 
 
@@ -24,6 +25,37 @@ def set_seed(seed=SEED_VALUE):
     # set `torch` pseudo-random generator at a fixed value
     torch.manual_seed(seed)
     print(f'\nSeed value set as {seed}.\n')
+
+
+def list_parquet_tweet_files(bucket_name=BUCKET_NAME):
+    """
+    Gathers the dates of tweet-related parquet files already stored in GCS
+    """
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+    blobs = bucket.list_blobs(prefix='dailies/')
+    parquet_files = [
+        str(i).split(',')[1].strip() for i in blobs
+        if str(i).split(',')[1].endswith('_twitter_data.parquet')
+    ]
+    return parquet_files
+
+
+def list_parquet_tweet_dates(bucket_name=BUCKET_NAME):
+    """
+    Gathers the dates of tweet-related parquet files already stored in GCS
+    """
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+    blobs = bucket.list_blobs(prefix='dailies/')
+    parquet_files = [
+        str(i).split(',')[1].strip() for i in blobs
+        if str(i).split(',')[1].endswith('_twitter_data.parquet')
+    ]
+    parquet_tweet_dates = [
+        i.split('/')[1] for i in parquet_files
+    ]
+    return parquet_tweet_dates
 
 
 def create_embedding_model(embed_model_name=EMBED_MODEL_NAME):
