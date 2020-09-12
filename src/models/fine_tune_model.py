@@ -1,11 +1,13 @@
 """
 Beginning work towards script that'll fine-tune model for tweets
 """
+import spacy_sentence_bert
 from sentence_transformers import SentencesDataset, InputExample
 import utils
 import pandas as pd
 import settings.config as config
 from datetime import datetime
+import numpy as np
 
 
 def load_daily_data(bucket_path):
@@ -46,7 +48,8 @@ def load_data_wrapper(parquet_files):
     print(f'\nLoading in {len(parquet_files)} files took {end - begin}.\n')
 
     return df
-
+    
+    
 
 def gather_training_examples(df, model):
     """
@@ -69,24 +72,15 @@ def main():
     # set seeds
     utils.set_seed()
     # load transformers model
-    # model = utils.create_embedding_model()
+    model = utils.create_embedding_model()
+    #print(model.max_seq_length)
+    
+    # gather list of parquet files containing data
+    #parquet_files = utils.list_parquet_tweet_files()[::-1]
 
-    parquet_files = utils.list_parquet_tweet_files()[::-1]
-
-    df = load_data_wrapper(parquet_files)
-    print(df.info())
-
-    # for file in parquet_files:
-    #    print(f'gs://{config.BUCKET_NAME}/{file}')
-
-    # pprint(parquet_files)
-
-    # day = input('Pick date to test with (YYYY-MM-DD)\n')
-    # print(config.ALL_TWITTER_DATA_FILEPATH)
-    # df = load_daily_data(day)
-
-    # train_dataset = gather_training_examples(df, model)
-    # print(train_dataset)
+    #df = load_data_wrapper(parquet_files)
+    #norm_tweets = num_tokens_avg(df)
+    # print(norm_tweets.mean(), norm_tweets.std(), norm_tweets.min(), norm_tweets.max())
 
 
 if __name__ == "__main__":
