@@ -1,4 +1,4 @@
 [flake8]
-ignore = E402
+ignore = E402,F403,F405
 exclude = experiments
 max-line-length = 100

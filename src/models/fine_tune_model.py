@@ -1,13 +1,14 @@
 """
 Beginning work towards script that'll fine-tune model for tweets
 """
+from fastai.text.all import *
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 import utils
 import pandas as pd
+from sklearn.model_selection import train_test_split
 import settings.config as config
 from datetime import datetime
 import numpy as np
-import random
 
 
 def load_daily_data(bucket_path):
@@ -63,6 +64,38 @@ def load_transformer_model():
     return tokenizer, model
 
 
+def split_data_train_test(df):
+    """
+    Given pandas Dataframe of tweets, splits into a train and test set
+    for fine-tuning assessment.
+    """
+    train, test = train_test_split(
+        df['normalized_tweet'],
+        test_size=0.2,
+        random_state=config.SEED_VALUE,
+        shuffle=True
+    )
+    return train, test
+
+
+class TransformersTokenizer(Transform):
+    """
+    Tokenizer class for fine-tuning (from fast.ai docs)
+    """
+    def __init__(self, tokenizer):
+        # init
+        self.tokenizer = tokenizer
+
+    def encodes(self, x):
+        # encodes tokens
+        toks = self.tokenizer.tokenize(x, max_length=512)
+        return tensor(self.tokenizer.encode(toks))
+
+    def decodes(self, x):
+        # decodes tokens
+        return TitledStr(self.tokenizer.decode(x.cpu().numpy()))
+
+
 def main():
     """
     Main application
@@ -83,12 +116,27 @@ def main():
     all_texts = np.array(df['normalized_tweet'].values)
     print(all_texts.shape, '\n')
 
-    num = random.randint(0, len(df))
-    test_tweet = all_texts[num]
-    print(test_tweet, '\n')
-    test_ids = tokenizer.encode(test_tweet)
-    print(test_ids, '\n')
-    print(tokenizer.decode(test_ids))
+    train, test = split_data_train_test(df)
+    print(len(train), len(test))
+
+    splits = [range_of(train), list(range(len(train), len(all_texts)))]
+    tls = TfmdLists(
+        all_texts,
+        TransformersTokenizer(tokenizer),
+        splits=splits,
+        dl_type=LMDataLoader
+    )
+    print(tls.train[0], '\n', tls.valid[0], '\n')
+    bs, sl = 8, 512
+    dls = tls.dataloaders(bs=bs, seq_len=sl)
+    dls.show_batch(max_n=5)
+
+    # num = random.randint(0, len(df))
+    # test_tweet = all_texts[num]
+    # print(test_tweet, '\n')
+    # test_ids = tokenizer.encode(test_tweet)
+    # print(test_ids, '\n')
+    # print(tokenizer.decode(test_ids))
 
     # norm_tweets = num_tokens_avg(df)
     # print(norm_tweets.mean(), norm_tweets.std(), norm_tweets.min(), norm_tweets.max())
