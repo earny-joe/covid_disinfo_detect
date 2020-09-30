@@ -87,13 +87,22 @@ class TransformersTokenizer(Transform):
         self.tokenizer = tokenizer
 
     def encodes(self, x):
-        # encodes tokens
-        toks = self.tokenizer.tokenize(x, max_length=512)
-        return tensor(self.tokenizer.encode(toks))
+        """
+        encodes tokens, returns only first 512 tokens as that is max
+        sequence length for BERT model
+        """
+        toks = self.tokenizer.tokenize(x)
+        return tensor(self.tokenizer.encode(toks, truncation=True, max_length=512))
 
     def decodes(self, x):
         # decodes tokens
         return TitledStr(self.tokenizer.decode(x.cpu().numpy()))
+
+
+class DropOutput(Callback):
+    def after_pred(self):
+        # callback to alter behavior of training loop
+        self.learn.pred = self.pred[0]
 
 
 def main():
@@ -130,6 +139,17 @@ def main():
     bs, sl = 8, 512
     dls = tls.dataloaders(bs=bs, seq_len=sl)
     dls.show_batch(max_n=5)
+    print('')
+
+    learn = Learner(
+        dls,
+        model,
+        loss_func=CrossEntropyLossFlat(),
+        cbs=[DropOutput],
+        metrics=Perplexity()
+    ).to_fp16()
+
+    print(learn.lr_find())
 
     # num = random.randint(0, len(df))
     # test_tweet = all_texts[num]
