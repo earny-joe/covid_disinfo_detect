@@ -46,6 +46,9 @@ MODEL_DIRECT_PATH = Path.cwd() / 'data/models'
 MODEL_FILE_NAME = 'svd_embedding.pkl'
 SEED_VALUE = 8
 
+BATCH_SIZE = 8
+SEQ_LENGTH = 512
+
 TOOLTIPS_TWEETS = [
     ('Tweet ID', '@tweet_id'),
     ('Created', '@created_at'),

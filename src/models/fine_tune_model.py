@@ -4,6 +4,7 @@ Beginning work towards script that'll fine-tune model for tweets
 from fastai.text.all import *
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 import utils
+import warnings
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import settings.config as config
@@ -51,6 +52,15 @@ def load_data_wrapper(parquet_files):
     return df
 
 
+def gather_all_texts(df):
+    """
+    Given a pandas dataframe, extracts all the values from the normalized_tweet
+    column, and stores in numpy array
+    """
+    all_texts = np.array(df['normalized_tweet'].values)
+    return all_texts
+
+
 def load_transformer_model():
     """
     TBD
@@ -76,6 +86,63 @@ def split_data_train_test(df):
         shuffle=True
     )
     return train, test
+
+
+def data_prep_for_lm_model(train, all_texts, tokenizer):
+    """
+    Preps data for fine-tuning model
+    """
+    # train-test split
+    splits = [range_of(train), list(range(len(train), len(all_texts)))]
+
+    # transformations for training
+    tls = TfmdLists(
+        all_texts,
+        TransformersTokenizer(tokenizer),
+        splits=splits,
+        dl_type=LMDataLoader
+    )
+    print(tls.train[0], '\n', tls.valid[0], '\n')
+
+    dls = tls.dataloaders(
+        bs=config.BATCH_SIZE,
+        seq_len=config.SEQ_LENGTH
+    )
+
+    dls.show_batch(max_n=2)
+    print('')
+    return dls
+
+
+def create_learner(dls, model):
+    """
+    Create learner for training
+    """
+    learn = Learner(
+        dls,
+        model,
+        loss_func=CrossEntropyLossFlat(),
+        cbs=[DropOutput],
+        metrics=Perplexity()
+    ).to_fp16()
+
+    return learn
+
+
+def find_learning_rate(learn):
+    """
+    Find the best learning rate for training.
+    """
+    lr_min, lr_steep = learn.lr_find(
+        start_lr=1e-07,
+        end_lr=10,
+        num_it=100,
+        stop_div=True,
+        show_plot=False,
+        suggestions=True
+    )
+
+    return lr_min, lr_steep
 
 
 class TransformersTokenizer(Transform):
@@ -109,57 +176,28 @@ def main():
     """
     Main application
     """
+    # filter out pandas future warning about panel
+    warnings.simplefilter(action='ignore', category=FutureWarning)
     # set seeds
     utils.set_seed()
     # load transformers model
     tokenizer, model = load_transformer_model()
-
-    print(model, '\n\n')
-
+    # print(model, '\n\n')
     # gather list of parquet files containing data
     parquet_files = utils.list_parquet_tweet_files()[::-1]
-
+    # load pandas dataframe with tweets
     df = load_data_wrapper(parquet_files)
-    print(df.info(), '\n')
-
-    all_texts = np.array(df['normalized_tweet'].values)
-    print(all_texts.shape, '\n')
-
+    # print(df.info(), '\n')
+    all_texts = gather_all_texts(df)
+    # print(all_texts.shape, '\n')
     train, test = split_data_train_test(df)
-    print(len(train), len(test))
-
-    splits = [range_of(train), list(range(len(train), len(all_texts)))]
-    tls = TfmdLists(
-        all_texts,
-        TransformersTokenizer(tokenizer),
-        splits=splits,
-        dl_type=LMDataLoader
-    )
-    print(tls.train[0], '\n', tls.valid[0], '\n')
-    bs, sl = 8, 512
-    dls = tls.dataloaders(bs=bs, seq_len=sl)
-    dls.show_batch(max_n=5)
-    print('')
-
-    learn = Learner(
-        dls,
-        model,
-        loss_func=CrossEntropyLossFlat(),
-        cbs=[DropOutput],
-        metrics=Perplexity()
-    ).to_fp16()
-
-    print(learn.lr_find())
-
-    # num = random.randint(0, len(df))
-    # test_tweet = all_texts[num]
-    # print(test_tweet, '\n')
-    # test_ids = tokenizer.encode(test_tweet)
-    # print(test_ids, '\n')
-    # print(tokenizer.decode(test_ids))
-
-    # norm_tweets = num_tokens_avg(df)
-    # print(norm_tweets.mean(), norm_tweets.std(), norm_tweets.min(), norm_tweets.max())
+    # print(len(train), len(test))
+    dls = data_prep_for_lm_model(train, all_texts, tokenizer)
+    # create learner for training
+    learn = create_learner(dls, model)
+    # find learning rate
+    lr_min, lr_steep = find_learning_rate(learn)
+    print(f'Minimum/10: {lr_min:.2e}, steepest point: {lr_steep:.2e}')
 
 
 if __name__ == "__main__":
