@@ -145,6 +145,18 @@ def find_learning_rate(learn):
     return lr_min, lr_steep
 
 
+def train_model(lr, learn):
+    """
+    Given a learning rate and a learner, trains language model
+    according to 1cycle 
+    """
+    learn.fit_one_cycle(
+        1,
+        lr
+    )
+    return learn
+
+
 class TransformersTokenizer(Transform):
     """
     Tokenizer class for fine-tuning (from fast.ai docs)
@@ -197,7 +209,8 @@ def main():
     learn = create_learner(dls, model)
     # find learning rate
     lr_min, lr_steep = find_learning_rate(learn)
-    print(f'Minimum/10: {lr_min:.2e}, steepest point: {lr_steep:.2e}')
+    print(f'Minimum/10: {lr_min:.2e}, steepest point: {lr_steep:.2e}\n')
+    learn.fit_one_cycle(1, lr_min)
 
 
 if __name__ == "__main__":
