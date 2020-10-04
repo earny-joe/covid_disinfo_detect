@@ -148,7 +148,7 @@ def find_learning_rate(learn):
 def train_model(lr, learn):
     """
     Given a learning rate and a learner, trains language model
-    according to 1cycle 
+    according to 1cycle
     """
     learn.fit_one_cycle(
         1,

@@ -17,6 +17,7 @@ tweepy==3.8.0
 vaderSentiment==3.3.2
 flake8>=3.7.9
 google-cloud-storage>=1.29.0
+six>=1.15.0
 pytest-custom-exit-code==0.3.0
 twarc>=1.10.0
 pyarrow==0.17.1
