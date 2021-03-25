@@ -179,7 +179,7 @@ pytest-custom-exit-code==0.3.0
 python-dateutil==2.8.1
 pytz==2019.3
 pyviz-comms==0.7.4
-PyYAML==5.3
+PyYAML==5.4
 pyzmq==19.0.0
 qtconsole==4.7.1
 QtPy==1.9.0
