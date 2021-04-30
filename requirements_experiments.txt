@@ -230,7 +230,7 @@ typing==3.7.4.1
 typing-extensions==3.7.4.2
 tzlocal==2.1
 umap-learn==0.4.3
-urllib3==1.25.7
+urllib3==1.25.8
 utils==1.0.1
 vaderSentiment==3.3.1
 validators==0.15.0
