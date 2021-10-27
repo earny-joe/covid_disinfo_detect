@@ -40,7 +40,7 @@ coverage==5.0.4
 cryptography==2.8
 cycler==0.10.0
 cymem==2.0.3
-dask==2.17.2
+dask==2021.10.0
 dataclasses==0.6
 datashader==0.11.0
 datashape==0.5.2
