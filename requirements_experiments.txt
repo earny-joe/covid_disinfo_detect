@@ -35,7 +35,7 @@ click==7.1.1
 cloudpickle==1.4.1
 colorcet==2.0.2
 contextvars==2.4
-cookiecutter==1.7.0
+cookiecutter==2.1.1
 coverage==5.0.4
 cryptography==2.8
 cycler==0.10.0
