@@ -123,7 +123,7 @@ msrestazure==0.6.3
 multidict==4.7.6
 multipledispatch==0.6.0
 murmurhash==1.0.0
-nbconvert==5.6.1
+nbconvert==6.5.1
 nbdev==0.2.14
 nbformat==5.0.4
 networkx==2.4
